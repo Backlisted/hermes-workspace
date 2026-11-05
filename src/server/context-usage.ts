@@ -191,27 +191,32 @@ function readConfiguredContextLength(payload: Record<string, unknown>): number {
 }
 
 async function readConfiguredModelContext(): Promise<ResolvedModelContext | null> {
+  // Portable/cloud deployments can expose chat without a management dashboard.
+  // Keep the configured model available there; an absent dashboard is not
+  // evidence that another model is selected. Its context limit remains unknown.
+  const configuredModel = process.env.HERMES_MODEL?.trim() || ''
+  const fallback = configuredModel ? { model: configuredModel, maxTokens: 0 } : null
   try {
     const capabilities = getCapabilities()
-    if (!capabilities.dashboard.available) return null
+    if (!capabilities.dashboard.available) return fallback
 
     const response = await dashboardFetch('/api/model/info', {
       signal: AbortSignal.timeout(2500),
     })
-    if (!response.ok) return null
+    if (!response.ok) return fallback
 
     const payload = (await response.json()) as Record<string, unknown>
     const model = typeof payload.model === 'string' ? payload.model.trim() : ''
     const maxTokens = readConfiguredContextLength(payload)
 
-    if (!model && maxTokens <= 0) return null
+    if (!model && maxTokens <= 0) return fallback
 
     return {
       model,
       maxTokens,
     }
   } catch {
-    return null
+    return fallback
   }
 }
 
@@ -401,9 +406,9 @@ export async function readContextUsage(
           : localMessages
         const usedTokens = estimateContextTokensFromMessages(pendingMessages)
         const model =
-          localSession.model || configuredModelContext?.model || 'gpt-5.4'
+          localSession.model || configuredModelContext?.model || ''
         const maxTokens =
-          configuredModelContext?.maxTokens || getContextWindow(model)
+          configuredModelContext?.maxTokens || (model ? getContextWindow(model) : 0)
         const contextPercent =
           maxTokens > 0 ? Math.round((usedTokens / maxTokens) * 1000) / 10 : 0
         return {
@@ -429,8 +434,9 @@ export async function readContextUsage(
             ]
           : localMessages
         const usedTokens = estimateContextTokensFromMessages(pendingMessages)
-        const model = configuredModelContext?.model || 'gpt-5.4'
-        const maxTokens = configuredModelContext?.maxTokens || getContextWindow(model)
+        const model = configuredModelContext?.model || ''
+        const maxTokens =
+          configuredModelContext?.maxTokens || (model ? getContextWindow(model) : 0)
         const contextPercent =
           maxTokens > 0 ? Math.round((usedTokens / maxTokens) * 1000) / 10 : 0
         return {

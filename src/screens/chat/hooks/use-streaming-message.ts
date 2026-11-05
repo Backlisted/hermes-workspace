@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ChatAttachment, ChatMessage } from '../types'
 import { readResolvedSessionHeaders } from '@/lib/send-stream-session-headers'
 import { useChatStore } from '@/stores/chat-store'
+import { useSessionModelStore } from '@/stores/session-model-store'
 import { pushActivity } from '@/components/inspector/activity-store'
 
 /**
@@ -870,7 +871,12 @@ export function useStreamingMessage(options: UseStreamingMessageOptions = {}) {
             fastMode: params.fastMode,
             attachments: params.attachments,
             idempotencyKey: params.idempotencyKey ?? crypto.randomUUID(),
-            model: params.model || undefined,
+            // Read the picker preference at send time. Session-status metadata
+            // can describe an older model and must not undo an explicit choice.
+            model:
+              useSessionModelStore.getState().getModel(params.sessionKey) ||
+              params.model ||
+              undefined,
             locale:
               typeof window !== 'undefined'
                 ? localStorage.getItem('hermes-workspace-locale') || 'en'

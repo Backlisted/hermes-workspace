@@ -5,9 +5,9 @@ name: CI
 
 on:
   push:
-    branches: [main, production]
+    branches: [main, production, codex/workspace-configured-model-20261105]
   pull_request:
-    branches: [main, production]
+    branches: [main, production, safehouse/railway-pnpm-builds]
 
 jobs:
   build:
