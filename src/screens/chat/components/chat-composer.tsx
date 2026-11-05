@@ -1108,7 +1108,7 @@ function ChatComposerComponent({
   // Replaces an earlier flow that PATCHed ~/.hermes/config.yaml — that path
   // 404s and would clobber the global default for every channel anyway.
   const persistedSessionModel = useSessionModelStore((s) =>
-    s.getModel(sessionKey),
+    s.getModel(normalizeDraftSessionKey(sessionKey)),
   )
   const setPersistedSessionModel = useSessionModelStore((s) => s.setModel)
 
@@ -1122,10 +1122,7 @@ function ChatComposerComponent({
     function handleModelSelect(nextModel: string, provider?: string) {
       const model = nextModel.trim()
       if (!model) return
-      const normalizedSessionKey =
-        typeof sessionKey === 'string' && sessionKey.trim().length > 0
-          ? sessionKey.trim()
-          : undefined
+      const normalizedSessionKey = normalizeDraftSessionKey(sessionKey)
       if (
         shouldBlockZeroForkModelSwitch(
           gatewayModeQuery.data,
@@ -1141,9 +1138,7 @@ function ChatComposerComponent({
       // Per-session, browser-local persistence. No global config write —
       // picking a model here only affects this chat. The actual model is
       // passed on each request via the chat-completion `model` field.
-      if (normalizedSessionKey) {
-        setPersistedSessionModel(normalizedSessionKey, resolved)
-      }
+      setPersistedSessionModel(normalizedSessionKey, resolved)
       setIsModelMenuOpen(false)
     },
     [

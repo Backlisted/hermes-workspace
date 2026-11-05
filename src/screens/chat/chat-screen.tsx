@@ -2458,6 +2458,9 @@ export function ChatScreen({
         // In portable mode, use 'main' — no server-side sessions exist.
         // In enhanced mode, create a UUID thread for the sessions API.
         const threadId = isPortableMode ? 'main' : crypto.randomUUID()
+        // The picker is usable before this chat has a server session. Move its
+        // draft preference before sending, without changing any session history.
+        useSessionModelStore.getState().moveModel('new', threadId)
         const { optimisticMessage } = createOptimisticMessage(
           trimmedBody,
           attachmentPayload,

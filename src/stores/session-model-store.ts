@@ -21,6 +21,7 @@ type State = {
 type Actions = {
   getModel: (sessionKey: string | null | undefined) => string | undefined
   setModel: (sessionKey: string, model: string) => void
+  moveModel: (fromSessionKey: string, toSessionKey: string) => void
   clearModel: (sessionKey: string) => void
 }
 
@@ -47,6 +48,18 @@ export const useSessionModelStore = create<State & Actions>()(
           const next = { ...state.models }
           delete next[sessionKey]
           return { models: next }
+        })
+      },
+      moveModel: (fromSessionKey, toSessionKey) => {
+        if (!fromSessionKey || !toSessionKey || fromSessionKey === toSessionKey) {
+          return
+        }
+        set((state) => {
+          const model = state.models[fromSessionKey]
+          if (!model) return state
+          const models = { ...state.models, [toSessionKey]: model }
+          delete models[fromSessionKey]
+          return { models }
         })
       },
     }),
